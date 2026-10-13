@@ -1,0 +1,58 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Strata Event Ticketing{% endblock %} | High-Reliability Booking API</title>
+  
+  <!-- System Sans & Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="navbar">
+    <div class="container nav-container">
+      <a href="{% url 'ui-event-list' %}" class="brand">
+        <span class="brand-logo">ST</span>
+        <span class="brand-text">STRATA</span>
+        <span class="brand-badge">CONCURRENCY-SAFE API</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="{% url 'ui-event-list' %}" class="nav-item {% if request.resolver_match.url_name == 'ui-event-list' %}active{% endif %}">Events Catalog</a>
+        <a href="{% url 'ui-concurrency-lab' %}" class="nav-item {% if request.resolver_match.url_name == 'ui-concurrency-lab' %}active{% endif %}">Concurrency Lab</a>
+        <a href="{% url 'ui-ticket-verify-search' %}" class="nav-item {% if 'verify' in request.resolver_match.url_name %}active{% endif %}">Verify Ticket</a>
+        <a href="/api/events/" target="_blank" class="nav-item btn-outline">DRF API</a>
+        <a href="/admin/" target="_blank" class="nav-item btn-outline">Django Admin</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Block -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- Utilitarian Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div>
+        <strong>Strata Event Ticketing Backend</strong> &mdash; Engineered with Django 6, DRF, and SQLite WAL with <code class="notice-code">select_for_update()</code>.
+      </div>
+      <div>
+        Admin credentials: <code class="notice-code">admin / admin12345</code>
+      </div>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/app.js' %}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

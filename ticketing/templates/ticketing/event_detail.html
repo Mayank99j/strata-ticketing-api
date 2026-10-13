@@ -1,0 +1,236 @@
+{% extends 'ticketing/base.html' %}
+{% load static %}
+
+{% block title %}{{ event.title }}{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <div class="hero-title-row">
+      <div>
+        <a href="{% url 'ui-event-list' %}" style="font-size: 13px; font-weight: 600; color: #64748B; margin-bottom: 8px; display: inline-block;">&larr; Back to Catalog</a>
+        <h1 class="hero-title">{{ event.title }}</h1>
+        <div style="display: flex; gap: 16px; align-items: center; color: #64748B; font-size: 14px; margin-top: 6px;">
+          <span>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="display: inline-block; vertical-align: middle;">
+              <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/>
+            </svg>
+            {{ event.event_date|date:"F d, Y &bull; H:i" }} UTC
+          </span>
+          <span>&bull;</span>
+          <span>
+            <svg width="14" height="14" viewBox="0 0 20 20" fill="currentColor" style="display: inline-block; vertical-align: middle;">
+              <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
+            </svg>
+            {{ event.location }}
+          </span>
+        </div>
+      </div>
+      <div class="hero-actions">
+        {% if event.is_sold_out %}
+          <span class="badge badge-soldout" style="font-size: 13px; padding: 6px 12px;">SOLD OUT</span>
+        {% else %}
+          <button class="btn btn-primary" onclick="openBookingModal({{ event.id }}, '{{ event.title|escapejs }}', {{ event.tickets_remaining }})">
+            Book Ticket
+          </button>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="main-content">
+  <div class="container">
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+      
+      <!-- Left Column: Description & Issued Tickets -->
+      <div>
+        <div class="event-card" style="margin-bottom: 24px;">
+          <div class="event-card-body">
+            <h3 style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 12px;">About This Event</h3>
+            <p style="font-size: 14px; line-height: 1.6; color: #334155; white-space: pre-line;">{{ event.description }}</p>
+          </div>
+        </div>
+
+        <div class="event-card">
+          <div class="event-card-body">
+            <h3 style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 16px;">
+              Recent Ticket Bookings ({{ tickets.count }})
+            </h3>
+            
+            {% if tickets %}
+              <div style="overflow-x: auto;">
+                <table class="thread-log-table">
+                  <thead>
+                    <tr>
+                      <th>Ticket Code</th>
+                      <th>Attendee</th>
+                      <th>Booked At</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {% for ticket in tickets %}
+                    <tr>
+                      <td><code style="font-family: monospace; background: #F1F5F9; padding: 2px 6px; border-radius: 4px; font-size: 12px;">{{ ticket.ticket_code|slice:":8" }}...</code></td>
+                      <td>
+                        <strong>{{ ticket.attendee.name }}</strong><br>
+                        <span style="font-size: 12px; color: #64748B;">{{ ticket.attendee.email }}</span>
+                      </td>
+                      <td style="font-size: 12px; color: #64748B;">{{ ticket.booked_at|date:"M d, H:i:s" }}</td>
+                      <td><span class="badge badge-available">CONFIRMED</span></td>
+                    </tr>
+                    {% endfor %}
+                  </tbody>
+                </table>
+              </div>
+            {% else %}
+              <p style="font-size: 13px; color: #64748B;">No tickets have been booked for this event yet.</p>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Capacity Status & Concurrency Lab CTA -->
+      <div>
+        <div class="event-card" style="margin-bottom: 24px;">
+          <div class="event-card-body">
+            <h3 style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 16px;">Capacity Status</h3>
+
+            <div class="capacity-box" style="margin-bottom: 16px;">
+              <div class="capacity-header">
+                <span class="capacity-counts tabular">
+                  <strong>{{ event.tickets_sold }}</strong> / {{ event.total_capacity }} Booked
+                </span>
+                <span class="capacity-remaining tabular">
+                  {{ event.tickets_remaining }} Remaining
+                </span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-bar {% if event.is_sold_out %}soldout{% elif event.tickets_remaining <= 5 %}warning{% endif %}" 
+                     style="width: {{ event.occupancy_percentage }}%;"></div>
+              </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+              <div class="metric-card" style="padding: 10px;">
+                <div class="metric-label">Occupancy</div>
+                <div class="metric-value" style="font-size: 18px;">{{ event.occupancy_percentage }}%</div>
+              </div>
+              <div class="metric-card" style="padding: 10px;">
+                <div class="metric-label">Status</div>
+                <div style="margin-top: 4px;">
+                  {% if event.is_sold_out %}
+                    <span class="badge badge-soldout">SOLD OUT</span>
+                  {% elif event.tickets_remaining <= 5 %}
+                    <span class="badge badge-warning">FEW LEFT</span>
+                  {% else %}
+                    <span class="badge badge-available">AVAILABLE</span>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+
+            {% if event.is_sold_out %}
+              <button class="btn btn-disabled btn-block" disabled>Sold Out</button>
+            {% else %}
+              <button class="btn btn-primary btn-block" 
+                      onclick="openBookingModal({{ event.id }}, '{{ event.title|escapejs }}', {{ event.tickets_remaining }})">
+                Book Ticket
+              </button>
+            {% endif %}
+          </div>
+        </div>
+
+        <!-- Concurrency CTA Box -->
+        <div class="notice-box">
+          <div class="notice-title">
+            Test Concurrency on this Event
+          </div>
+          <div class="notice-body" style="margin-bottom: 12px;">
+            Simulate 10 or 20 concurrent buyers trying to grab the remaining {{ event.tickets_remaining }} seats in parallel.
+          </div>
+          <a href="{% url 'ui-concurrency-lab' %}" class="btn btn-secondary btn-sm btn-block">
+            Open Concurrency Lab &rarr;
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Include Modal from Index -->
+<div class="modal-overlay" id="bookingModal">
+  <div class="modal-dialog">
+    <div class="modal-header">
+      <h3 class="modal-title">Book Event Ticket</h3>
+      <button class="modal-close" id="modalCloseBtn">&times;</button>
+    </div>
+
+    <div class="modal-body" id="formContent">
+      <div style="margin-bottom: 16px;">
+        <h4 id="modalEventTitle" style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 4px;">{{ event.title }}</h4>
+        <span id="modalRemainingSeats" class="badge badge-available tabular">{{ event.tickets_remaining }} seats remaining</span>
+      </div>
+
+      <div id="bookingError" class="notice-box" style="display: none; border-left-color: #B91C1C; background: #FEF2F2; color: #B91C1C; padding: 10px 14px; margin-bottom: 16px; font-size: 13px;"></div>
+
+      <form id="bookingForm">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label" for="attendeeName">Attendee Full Name</label>
+          <input type="text" id="attendeeName" class="input-text" placeholder="e.g. Elena Rostova" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="attendeeEmail">Work / Personal Email</label>
+          <input type="email" id="attendeeEmail" class="input-text" placeholder="e.g. elena@company.com" required>
+          <div class="form-helper">Ticket UUID code will be linked to this email.</div>
+        </div>
+      </form>
+    </div>
+
+    <div class="modal-body" id="successContent" style="display: none;">
+      <div style="text-align: center; margin-bottom: 16px;">
+        <span class="badge badge-success" style="font-size: 13px; padding: 6px 14px;">Reservation Confirmed</span>
+        <h4 style="font-size: 18px; font-weight: 700; color: #0F172A; margin-top: 8px;">Ticket Issued Successfully</h4>
+      </div>
+
+      <div class="ticket-slip">
+        <div class="ticket-slip-header">
+          <span style="font-size: 12px; font-weight: 700;">STRATA TICKET PASS</span>
+          <span style="font-size: 11px; opacity: 0.8;">CONCURRENCY-SAFE</span>
+        </div>
+        <div class="ticket-slip-body">
+          <div class="ticket-info-grid">
+            <div>
+              <div class="metric-label">Attendee</div>
+              <div id="receiptAttendeeName" style="font-weight: 600; color: #0F172A;"></div>
+              <div id="receiptAttendeeEmail" style="font-size: 12px; color: #64748B;"></div>
+            </div>
+            <div>
+              <div class="metric-label">Event</div>
+              <div id="receiptEventTitle" style="font-weight: 600; color: #0F172A; font-size: 13px;"></div>
+              <div id="receiptBookedAt" style="font-size: 12px; color: #64748B;"></div>
+            </div>
+          </div>
+          <div class="ticket-code-block">
+            <div class="metric-label">Unique Verification Code (UUID)</div>
+            <div class="ticket-code-text" id="receiptTicketCode"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 16px; display: flex; gap: 10px;">
+        <button class="btn btn-secondary btn-block" id="copyTicketBtn" onclick="copyTicketCode()">Copy Code</button>
+        <button class="btn btn-primary btn-block" onclick="window.print()">Print Ticket</button>
+      </div>
+    </div>
+
+    <div class="modal-footer" id="modalFooter">
+      <button type="button" class="btn btn-secondary" id="modalCancelBtn">Close</button>
+      <button type="submit" form="bookingForm" class="btn btn-primary" id="bookingSubmitBtn">Confirm Reservation</button>
+    </div>
+  </div>
+</div>
+{% endblock %}

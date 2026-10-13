@@ -1,0 +1,92 @@
+{% extends 'ticketing/base.html' %}
+{% load static %}
+
+{% block title %}Verify Ticket{% endblock %}
+
+{% block content %}
+<section class="page-hero">
+  <div class="container">
+    <div class="hero-title-row">
+      <div>
+        <h1 class="hero-title">Ticket Authenticity & Verification</h1>
+        <p class="hero-subtitle">
+          Cryptographically verify ticket credentials and reservation status across all events in the Strata registry.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="main-content">
+  <div class="container" style="max-width: 680px;">
+    
+    <!-- Lookup Form -->
+    <div class="event-card" style="margin-bottom: 24px;">
+      <div class="event-card-body">
+        <h3 style="font-size: 16px; font-weight: 700; color: #0F172A; margin-bottom: 12px;">Enter Ticket UUID Code</h3>
+        <form method="GET" action="{% url 'ui-ticket-verify-search' %}">
+          <div style="display: flex; gap: 10px;">
+            <input type="text" name="code" class="input-text" placeholder="e.g. 550e8400-e29b-41d4-a716-446655440000" value="{{ searched_code }}" required>
+            <button type="submit" class="btn btn-primary">Verify</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Verification Result -->
+    {% if searched_code %}
+      {% if ticket %}
+        <div class="ticket-slip" style="box-shadow: var(--shadow-md);">
+          <div class="ticket-slip-header" style="background: #15803D;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+              </svg>
+              <span style="font-weight: 700;">VALID TICKET CONFIRMED</span>
+            </div>
+            <span style="font-size: 11px; opacity: 0.9;">AUTHENTIC RECORD</span>
+          </div>
+          <div class="ticket-slip-body">
+            <div class="ticket-info-grid">
+              <div>
+                <div class="metric-label">Attendee Name</div>
+                <div style="font-size: 16px; font-weight: 700; color: #0F172A;">{{ ticket.attendee.name }}</div>
+                <div style="font-size: 13px; color: #64748B;">{{ ticket.attendee.email }}</div>
+              </div>
+              <div>
+                <div class="metric-label">Event</div>
+                <div style="font-size: 15px; font-weight: 700; color: #0F172A;">{{ ticket.event.title }}</div>
+                <div style="font-size: 13px; color: #64748B;">{{ ticket.event.event_date|date:"F d, Y &bull; H:i" }} UTC</div>
+              </div>
+            </div>
+
+            <div class="ticket-info-grid" style="border-top: 1px solid #E2E8F0; padding-top: 14px;">
+              <div>
+                <div class="metric-label">Venue Location</div>
+                <div style="font-size: 13px; color: #334155;">{{ ticket.event.location }}</div>
+              </div>
+              <div>
+                <div class="metric-label">Booked At</div>
+                <div style="font-size: 13px; color: #334155;">{{ ticket.booked_at|date:"M d, Y H:i:s" }} UTC</div>
+              </div>
+            </div>
+
+            <div class="ticket-code-block">
+              <div class="metric-label">Ticket UUID</div>
+              <div class="ticket-code-text">{{ ticket.ticket_code }}</div>
+            </div>
+          </div>
+        </div>
+      {% else %}
+        <div class="notice-box" style="border-left-color: #B91C1C; background: #FEF2F2;">
+          <div class="notice-title" style="color: #B91C1C;">Ticket Not Found</div>
+          <div class="notice-body">
+            No ticket was found matching the code <code class="notice-code">{{ searched_code }}</code>. Please verify that the code was typed correctly.
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+
+  </div>
+</section>
+{% endblock %}
